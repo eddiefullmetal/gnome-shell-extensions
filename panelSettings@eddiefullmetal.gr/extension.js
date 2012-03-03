@@ -79,6 +79,8 @@ function VisibilityBaseState(originalPanelHeight){
 VisibilityBaseState.prototype = {
     _init: function(originalPanelHeight){
         this._originalPanelHeight = originalPanelHeight;
+        this._actor = Main.panel.actor.get_parent();
+        this._monitor = Main.layoutManager.primaryMonitor;
     },
     onPanelMouseEnter: function(){
     },
@@ -92,63 +94,57 @@ VisibilityBaseState.prototype = {
     },
     destroy: function(){
     },
-    _hidePanelNoAnim: function(){
-        let actor = Main.panel.actor.get_parent();
-        
-        if(actor.get_y() == 0){
-            actor.set_height(1);
-            actor.set_clip(0, 0, actor.get_width(), 1);
+    _hidePanelNoAnim: function(){      
+        if(this._actor.get_y() == this._monitor.y){
+            this._actor.set_height(1);
+            this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), 1);
         } else {
-            let y = actor.get_y() + actor.get_height() -1;
-            actor.set_y(y);
+            let y = this._actor.get_y() + this._actor.get_height() -1;
+            this._actor.set_y(y);
         }
     },
-    _showPanelNoAnim: function(){
-        let actor = Main.panel.actor.get_parent();
-        
-        if(actor.get_y() == 0){        
-            actor.set_height(this._originalPanelHeight);
-            actor.remove_clip();
+    _showPanelNoAnim: function(){        
+        if(this._actor.get_y() == this._monitor.y){        
+            this._actor.set_height(this._originalPanelHeight);
+            this._actor.remove_clip();
         } else {
-            actor.set_y(Main.layoutManager.primaryMonitor.height - actor.get_height());
+            this._actor.set_y(this._monitor.height - this._actor.get_height());
         }
     },
     _hidePanel: function(){
-        let actor = Main.panel.actor.get_parent();
-        if(actor.get_y() == 0){        
-            Tweener.addTween(actor, {
+        if(this._actor.get_y() == this._monitor.y){        
+            Tweener.addTween(this._actor, {
                 height: 1,
                 time: 0.3,
                 transition: 'easeOutQuad',
-                onUpdate: function() {
-                    actor.set_clip(0, 0, actor.get_width(), actor.get_height());
-                }
+                onUpdate: Lang.bind(this, function() {
+                    this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                })
             });
         } else {
-            Tweener.addTween(actor, {
-                y: actor.get_y() + actor.get_height() - 1,
+            Tweener.addTween(this._actor, {
+                y: this._actor.get_y() + this._actor.get_height() - 1,
                 time: 0.3,
                 transition: 'easeOutQuad'
             });
         }
     },
     _showPanel: function(){
-        let actor = Main.panel.actor.get_parent();
-        if(actor.get_y() == 0){
-            Tweener.addTween(actor, {
+        if(this._actor.get_y() == this._monitor.y){
+            Tweener.addTween(this._actor, {
                 height: this._originalPanelHeight,
                 time: 0.3,
                 transition: 'easeOutQuad',
-                onComplete: function() {
-                    actor.remove_clip();
-                },
-                onUpdate: function() {
-                    actor.set_clip(0, 0, actor.get_width(), actor.get_height());
-                }
+                onComplete: Lang.bind(this, function() {
+                    this._actor.remove_clip();
+                }),
+                onUpdate: Lang.bind(this, function() {
+                    this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                })
             });
         } else {
-            Tweener.addTween(actor, {
-                y: Main.layoutManager.primaryMonitor.height - actor.get_height(),
+            Tweener.addTween(this._actor, {
+                y: this._monitor.height - this._actor.get_height(),
                 time: 0.3,
                 transition: 'easeOutQuad'
             });
@@ -371,7 +367,7 @@ PanelLayoutManager.prototype = {
 
         switch(this.layoutState){
             case LAYOUT_TOP:
-                Main.panel.actor.get_parent().set_y(0);
+                Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
                 this._arrowSide = 0;
                 break;
             case LAYOUT_BOTTOM:
