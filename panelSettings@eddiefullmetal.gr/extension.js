@@ -38,10 +38,17 @@ VisibilityBaseState.prototype = {
     },
     destroy: function(){
     },
+    _hidePanelNoAnim: function(){
+        Main.panel.actor.set_height(1);
+        Main.panel.actor.set_clip(0, 0, Main.panel.actor.get_width(), 1);
+    },
+    _showPanelNoAnim: function(){
+        Main.panel.actor.set_height(this._originalPanelHeight);
+        Main.panel.actor.remove_clip();
+    },
     _hidePanel: function(){
         Tweener.addTween(Main.panel.actor, {
             height: 1,
-            opacity: 255,
             time: 0.3,
             transition: 'easeOutQuad',
             onUpdate: function() {
@@ -52,7 +59,6 @@ VisibilityBaseState.prototype = {
     _showPanel: function(){
         Tweener.addTween(Main.panel.actor, {
             height: this._originalPanelHeight,
-            opacity: 255,
             time: 0.3,
             transition: 'easeOutQuad',
             onComplete: function() {
@@ -106,9 +112,7 @@ VisibilityAutohideState.prototype = {
         }
     },
     onOverviewHiding: function(){
-        if(this._pendingHideRequest){
-            this._hidePanel();
-        }
+        this._hidePanelNoAnim();
     },
     onMenuOpenStateChanged: function(menu, open){
         if(!open && this._pendingHideRequest && !Main.overview.visible){
@@ -135,10 +139,10 @@ VisibilityOverviewOnlyState.prototype = {
         }
     },
     onOverviewHiding: function(){
-        this._hidePanel();
+        this._hidePanelNoAnim();
     },
     onOverviewShowing: function(){
-        this._showPanel();
+        this._showPanelNoAnim();
     },
     destroy: function(){
         this._showPanel();
