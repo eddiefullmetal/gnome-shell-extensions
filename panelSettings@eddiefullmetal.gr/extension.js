@@ -61,6 +61,38 @@ SettingsManager.prototype = {
     }
 }
 
+function OverviewCorner(){
+    this._init();
+}
+
+OverviewCorner.prototype = {
+    _init:function(){
+        let primaryMonitor = Main.layoutManager.primaryMonitor;
+
+        this.actor = new St.Button;
+        this.actor.set_x(primaryMonitor.x);
+        this.actor.set_y(primaryMonitor.y);
+        this.actor.set_width(1);
+        this.actor.set_height(1);        
+        this._enterEventId = this.actor.connect("enter-event", Lang.bind(this, this.showOverview));
+
+        Main.layoutManager.addChrome(this.actor, {visibleInFullscreen:true})
+    },
+    showOverview: function(){
+        Main.overview.toggle();
+    },
+    enable: function(){
+        this.actor.show();
+    },
+    disable: function(){
+        this.actor.hide();
+    },
+    destroy: function(){
+        this.actor.disconnect(this._enterEventId);
+        this.actor.destroy();
+    }
+}
+
 /* Panel Visibility States */
 
 //Visibility States
@@ -194,6 +226,9 @@ VisibilityAutohideState.prototype = {
     },
     onOverviewHiding: function(){
         this._hidePanelNoAnim();
+    },
+    onOverviewShowing: function(){
+        this._showPanelNoAnim();
     },
     onMenuOpenStateChanged: function(menu, open){
         if(!open && this._pendingHideRequest && !Main.overview.visible){
@@ -350,12 +385,16 @@ PanelLayoutManager.prototype = {
         let menuRemovedCallback = Lang.bind(this, this._menuRemoved);         
 
         this._menuHook = new MenuHook(menuAddedCallback, menuRemovedCallback);
+        this._overviewCorner = new OverviewCorner;
 
         if(this._settings.settings.layoutState != undefined){
-            this.setState(this._settings.settings.layoutState);
+            this.setState(this._settings.settings.layoutState, false);
         }else{
-            this.setState(LAYOUT_TOP);
+            this.setState(LAYOUT_TOP, true);
         }
+
+        this._overviewShowingEventId = Main.overview.connect('showing', Lang.bind(this, this._onOverviewShowing));
+        this._overviewHidingEventId = Main.overview.connect('hiding', Lang.bind(this, this._onOverviewHiding));
     },
     setState: function(state, save){
         this.layoutState = state;
@@ -368,11 +407,15 @@ PanelLayoutManager.prototype = {
         switch(this.layoutState){
             case LAYOUT_TOP:
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
-                this._arrowSide = 0;
+                Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.messageTray.actor.get_parent().get_height());
+                this._overviewCorner.disable();
+                this._arrowSide = St.Side.TOP;
                 break;
             case LAYOUT_BOTTOM:
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
-                this._arrowSide = 2;
+                Main.messageTray.actor.get_parent().set_y(0);
+                this._overviewCorner.enable();
+                this._arrowSide = St.Side.BOTTOM;
                 break;
         }
 
@@ -389,9 +432,16 @@ PanelLayoutManager.prototype = {
     },
     _menuRemoved: function(menu){
     },
+    _onOverviewShowing: function(){
+    },
+    _onOverviewHiding: function(){
+    },
     destroy: function(){
         this.setState(LAYOUT_TOP, false);
         this._menuHook.destroy();
+        this._overviewCorner.destroy();
+        Main.overview.disconnect(this._overviewShowingEventId);
+        Main.overview.disconnect(this._overviewHidingEventId);
     }
 }
 
