@@ -7,6 +7,7 @@ const Tweener = imports.ui.tweener;
 const Main = imports.ui.main;
 const PopupMenu = imports.ui.popupMenu;
 const PanelMenu = imports.ui.panelMenu;
+const Layout = imports.ui.layout;
 
 const ExtensionPath = imports.ui.extensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
 
@@ -67,29 +68,17 @@ function OverviewCorner(){
 
 OverviewCorner.prototype = {
     _init:function(){
-        let primaryMonitor = Main.layoutManager.primaryMonitor;
-
-        this.actor = new St.Button;
-        this.actor.set_x(primaryMonitor.x);
-        this.actor.set_y(primaryMonitor.y);
-        this.actor.set_width(1);
-        this.actor.set_height(1);        
-        this._enterEventId = this.actor.connect("enter-event", Lang.bind(this, this.showOverview));
-
-        Main.layoutManager.addChrome(this.actor, {visibleInFullscreen:true})
-    },
-    showOverview: function(){
-        Main.overview.toggle();
+        this._hotCorner = new Layout.HotCorner();  
+        Main.layoutManager.addChrome(this._hotCorner.actor, {visibleInFullscreen:true})
     },
     enable: function(){
-        this.actor.show();
+        this._hotCorner.actor.show();
     },
     disable: function(){
-        this.actor.hide();
+        this._hotCorner.actor.hide();
     },
     destroy: function(){
-        this.actor.disconnect(this._enterEventId);
-        this.actor.destroy();
+        this._hotCorner.destroy();
     }
 }
 
@@ -126,6 +115,10 @@ VisibilityBaseState.prototype = {
     },
     destroy: function(){
     },
+    _hidePanelCompletely: function(){
+        this._hidePanelNoAnim();
+        this._actor.hide();
+    },
     _hidePanelNoAnim: function(){      
         if(this._actor.get_y() == this._monitor.y){
             this._actor.set_height(1);
@@ -135,7 +128,8 @@ VisibilityBaseState.prototype = {
             this._actor.set_y(y);
         }
     },
-    _showPanelNoAnim: function(){        
+    _showPanelNoAnim: function(){  
+        this._actor.show();      
         if(this._actor.get_y() == this._monitor.y){        
             this._actor.set_height(this._originalPanelHeight);
             this._actor.remove_clip();
@@ -162,6 +156,7 @@ VisibilityBaseState.prototype = {
         }
     },
     _showPanel: function(){
+        this._actor.show();
         if(this._actor.get_y() == this._monitor.y){
             Tweener.addTween(this._actor, {
                 height: this._originalPanelHeight,
@@ -249,19 +244,23 @@ VisibilityOverviewOnlyState.prototype = {
     __proto__: VisibilityBaseState.prototype,
     _init: function(originalPanelHeight){
         VisibilityBaseState.prototype._init.call(this, originalPanelHeight);
+        this._overviewCorner = new OverviewCorner;
 
         if(!Main.overview.visible){
-            this._hidePanel();
+            this._hidePanelCompletely();
         }
     },
     onOverviewHiding: function(){
-        this._hidePanelNoAnim();
+        this._overviewCorner.enable();
+        this._hidePanelCompletely();
     },
     onOverviewShowing: function(){
+        this._overviewCorner.disable();
         this._showPanelNoAnim();
     },
     destroy: function(){
-        this._showPanel();
+        this._overviewCorner.destroy();
+        this._showPanelNoAnim();
     }
 }
 
@@ -392,9 +391,6 @@ PanelLayoutManager.prototype = {
         }else{
             this.setState(LAYOUT_TOP, true);
         }
-
-        this._overviewShowingEventId = Main.overview.connect('showing', Lang.bind(this, this._onOverviewShowing));
-        this._overviewHidingEventId = Main.overview.connect('hiding', Lang.bind(this, this._onOverviewHiding));
     },
     setState: function(state, save){
         this.layoutState = state;
@@ -432,16 +428,10 @@ PanelLayoutManager.prototype = {
     },
     _menuRemoved: function(menu){
     },
-    _onOverviewShowing: function(){
-    },
-    _onOverviewHiding: function(){
-    },
     destroy: function(){
         this.setState(LAYOUT_TOP, false);
         this._menuHook.destroy();
         this._overviewCorner.destroy();
-        Main.overview.disconnect(this._overviewShowingEventId);
-        Main.overview.disconnect(this._overviewHidingEventId);
     }
 }
 
