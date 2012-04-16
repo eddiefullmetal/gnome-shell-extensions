@@ -89,8 +89,8 @@ const VISIBILITY_NORMAL = -1;
 const VISIBILITY_AUTOHIDE = 0;
 const VISIBILITY_OVERVIEW_ONLY = 1;
 
-const LAYOUT_TOP = 0;
-const LAYOUT_BOTTOM = 1;
+const EDGE_TOP = 0;
+const EDGE_BOTTOM = 1;
 
 /* Base State */
 function VisibilityBaseState(originalPanelHeight){
@@ -371,12 +371,12 @@ PanelVisibilityManager.prototype = {
     }
 }
 
-/* Panel Layout Manager */
-function PanelLayoutManager(settings){
+/* Panel Edge Manager */
+function PanelEdgeManager(settings){
     this._init(settings);
 }
 
-PanelLayoutManager.prototype = {
+PanelEdgeManager.prototype = {
     _init: function(settings){
         this._settings = settings;
 
@@ -386,30 +386,30 @@ PanelLayoutManager.prototype = {
         this._menuHook = new MenuHook(menuAddedCallback, menuRemovedCallback);
         this._overviewCorner = new OverviewCorner;
 
-        if(this._settings.settings.layoutState != undefined){
-            this.setState(this._settings.settings.layoutState, false);
+        if(this._settings.settings.edge != undefined){
+            this.setEdge(this._settings.settings.edge, false);
         }else{
-            this.setState(LAYOUT_TOP, true);
+            this.setEdge(EDGE_TOP, true);
         }
     },
-    setState: function(state, save){
-        this.layoutState = state;
+    setEdge: function(edge, save){
+        this.edge = edge;
 
         if(save){
-            this._settings.settings.layoutState = this.layoutState; 
+            this._settings.settings.edge = this.edge; 
             this._settings.save();
         }
 
-        switch(this.layoutState){
-            case LAYOUT_TOP:
-                Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
+        switch(this.edge){
+            case EDGE_TOP:
                 Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.messageTray.actor.get_parent().get_height());
+                Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
                 this._overviewCorner.disable();
                 this._arrowSide = St.Side.TOP;
                 break;
-            case LAYOUT_BOTTOM:
-                Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
+            case EDGE_BOTTOM:
                 Main.messageTray.actor.get_parent().set_y(0);
+                Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 this._overviewCorner.enable();
                 this._arrowSide = St.Side.BOTTOM;
                 break;
@@ -429,7 +429,7 @@ PanelLayoutManager.prototype = {
     _menuRemoved: function(menu){
     },
     destroy: function(){
-        this.setState(LAYOUT_TOP, false);
+        this.setState(EDGE_TOP, false);
         this._menuHook.destroy();
         this._overviewCorner.destroy();
     }
@@ -450,10 +450,10 @@ PanelSettingsButton.prototype = {
         this._settings.load();
 
         this._visibilityManager = new PanelVisibilityManager(this._settings);
-        this._layoutManager = new PanelLayoutManager(this._settings);
+        this._edgeManager = new PanelEdgeManager(this._settings);
         
         this._createVisibilityMenu();
-        this._createLayoutMenu();
+        this._createEdgeMenu();
     },
     _createVisibilityMenu: function(){
         this._visibilityItems = new Array;
@@ -475,21 +475,21 @@ PanelSettingsButton.prototype = {
         
         this._updateVisibilityState();
     },
-    _createLayoutMenu: function(){
-        this._panelLayoutSubMenu = new PopupMenu.PopupSubMenuMenuItem("Layout");
-        this.menu.addMenuItem(this._panelLayoutSubMenu);
+    _createEdgeMenu: function(){
+        this._panelEdgeSubMenu = new PopupMenu.PopupSubMenuMenuItem("Edge");
+        this.menu.addMenuItem(this._panelEdgeSubMenu);
 
-        this._layoutItems = new Array;
+        this._edgeItems = new Array;
 
-        this._layoutItems[LAYOUT_TOP] = new PopupMenu.PopupMenuItem("Top");
-        this._layoutItems[LAYOUT_TOP].connect('activate', Lang.bind(this, this._onLayoutTopItemClick));
-        this._panelLayoutSubMenu.menu.addMenuItem(this._layoutItems[LAYOUT_TOP]);
+        this._edgeItems[EDGE_TOP] = new PopupMenu.PopupMenuItem("Top");
+        this._edgeItems[EDGE_TOP].connect('activate', Lang.bind(this, this._onEdgeTopItemClick));
+        this._panelEdgeSubMenu.menu.addMenuItem(this._edgeItems[EDGE_TOP]);
 
-        this._layoutItems[LAYOUT_BOTTOM] = new PopupMenu.PopupMenuItem("Bottom");
-        this._layoutItems[LAYOUT_BOTTOM].connect('activate', Lang.bind(this, this._onLayoutBottomItemClick));
-        this._panelLayoutSubMenu.menu.addMenuItem(this._layoutItems[LAYOUT_BOTTOM]);
+        this._edgeItems[EDGE_BOTTOM] = new PopupMenu.PopupMenuItem("Bottom");
+        this._edgeItems[EDGE_BOTTOM].connect('activate', Lang.bind(this, this._onEdgeBottomItemClick));
+        this._panelEdgeSubMenu.menu.addMenuItem(this._edgeItems[EDGE_BOTTOM]);
 
-        this._updateLayoutState();
+        this._updateEdgeState();
     },
     _onVisibilityOverviewOnlyItemClick: function(){
         this._visibilityManager.setState(VISIBILITY_OVERVIEW_ONLY);
@@ -503,13 +503,13 @@ PanelSettingsButton.prototype = {
         this._visibilityManager.setState(VISIBILITY_NORMAL);
         this._updateVisibilityState();
     },
-    _onLayoutTopItemClick: function(){
-        this._layoutManager.setState(LAYOUT_TOP, true);
-        this._updateLayoutState();
+    _onEdgeTopItemClick: function(){
+        this._edgeManager.setEdge(EDGE_TOP, true);
+        this._updateEdgeState();
     },
-    _onLayoutBottomItemClick: function(){
-        this._layoutManager.setState(LAYOUT_BOTTOM, true);
-        this._updateLayoutState();
+    _onEdgeBottomItemClick: function(){
+        this._edgeManager.setEdge(EDGE_BOTTOM, true);
+        this._updateEdgeState();
     },
     _updateVisibilityState: function(){
         for(let index in this._visibilityItems){
@@ -518,16 +518,16 @@ PanelSettingsButton.prototype = {
         
         this._visibilityItems[this._visibilityManager.visibilityState].setShowDot(true);
     },
-    _updateLayoutState: function(){
-        for(let index in this._layoutItems){
-            this._layoutItems[index].setShowDot(false);
+    _updateEdgeState: function(){
+        for(let index in this._edgeItems){
+            this._edgeItems[index].setShowDot(false);
         }
         
-        this._layoutItems[this._layoutManager.layoutState].setShowDot(true);
+        this._edgeItems[this._edgeManager.edge].setShowDot(true);
     },
     destroy: function(){
         this._visibilityManager.destroy();
-        this._layoutManager.destroy();
+        this._edgeManager.destroy();
         PanelMenu.SystemStatusButton.prototype.destroy.call(this);
     }
 };
