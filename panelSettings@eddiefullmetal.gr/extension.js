@@ -8,8 +8,14 @@ const Main = imports.ui.main;
 const PopupMenu = imports.ui.popupMenu;
 const PanelMenu = imports.ui.panelMenu;
 const Layout = imports.ui.layout;
+const ExtensionSystem = imports.ui.extensionSystem;
 
-const ExtensionPath = imports.ui.extensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
+let ExtensionPath;
+if(ExtensionSystem.Config.PACKAGE_VERSION.indexOf("3.4") == 0){
+  ExtensionPath = imports.misc.extensionUtils.getCurrentExtension().path;
+}else{
+  ExtensionPath = ExtensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
+}
 
 /* Generic Helper Classes */
 function MenuHook(menuAddedCallback, menuRemovedCallback){
