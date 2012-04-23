@@ -12,9 +12,9 @@ const ExtensionSystem = imports.ui.extensionSystem;
 
 let ExtensionPath;
 if(ExtensionSystem.Config.PACKAGE_VERSION.indexOf("3.4") == 0){
-  ExtensionPath = imports.misc.extensionUtils.getCurrentExtension().path;
+    ExtensionPath = imports.misc.extensionUtils.getCurrentExtension().path;
 }else{
-  ExtensionPath = ExtensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
+    ExtensionPath = ExtensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
 }
 
 /* Generic Helper Classes */
@@ -75,7 +75,7 @@ function OverviewCorner(){
 OverviewCorner.prototype = {
     _init:function(){
         this._hotCorner = new Layout.HotCorner();  
-        Main.layoutManager.addChrome(this._hotCorner.actor, {visibleInFullscreen:true})
+        Main.layoutManager.addChrome(this._hotCorner.actor, {visibleInFullscreen:true});
     },
     enable: function(){
         this._hotCorner.actor.show();
@@ -95,6 +95,7 @@ const VISIBILITY_NORMAL = -1;
 const VISIBILITY_AUTOHIDE = 0;
 const VISIBILITY_OVERVIEW_ONLY = 1;
 
+//Edges
 const EDGE_TOP = 0;
 const EDGE_BOTTOM = 1;
 
@@ -126,61 +127,75 @@ VisibilityBaseState.prototype = {
         this._actor.hide();
     },
     _hidePanelNoAnim: function(){      
-        if(this._actor.get_y() == this._monitor.y){
-            this._actor.set_height(1);
-            this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), 1);
-        } else {
-            let y = this._actor.get_y() + this._actor.get_height() -1;
-            this._actor.set_y(y);
+        switch(Main.panel.edge){
+            case EDGE_TOP:
+                this._actor.set_height(1);
+                this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), 1);
+                break;
+            case EDGE_BOTTOM:
+                let y = this._actor.get_y() + this._actor.get_height() -1;
+                this._actor.set_y(y);
+                break;
         }
     },
     _showPanelNoAnim: function(){  
-        this._actor.show();      
-        if(this._actor.get_y() == this._monitor.y){        
-            this._actor.set_height(this._originalPanelHeight);
-            this._actor.remove_clip();
-        } else {
-            this._actor.set_y(this._monitor.height - this._actor.get_height());
+        this._actor.show();  
+
+        switch(Main.panel.edge){
+            case EDGE_TOP:
+                this._actor.set_height(this._originalPanelHeight);
+                this._actor.remove_clip();
+                break;
+            case EDGE_BOTTOM:
+                this._actor.set_y(this._monitor.height - this._actor.get_height());
+                break;
         }
     },
     _hidePanel: function(){
-        if(this._actor.get_y() == this._monitor.y){        
-            Tweener.addTween(this._actor, {
-                height: 1,
-                time: 0.3,
-                transition: 'easeOutQuad',
-                onUpdate: Lang.bind(this, function() {
-                    this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
-                })
-            });
-        } else {
-            Tweener.addTween(this._actor, {
-                y: this._actor.get_y() + this._actor.get_height() - 1,
-                time: 0.3,
-                transition: 'easeOutQuad'
-            });
+        switch(Main.panel.edge){
+            case EDGE_TOP:    
+                Tweener.addTween(this._actor, {
+                    height: 1,
+                    time: 0.3,
+                    transition: 'easeOutQuad',
+                    onUpdate: Lang.bind(this, function() {
+                        this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                    })
+                });
+                break;
+            case EDGE_BOTTOM:
+                Tweener.addTween(this._actor, {
+                    y: this._actor.get_y() + this._actor.get_height() - 1,
+                    time: 0.3,
+                    transition: 'easeOutQuad'
+                });
+                break;
         }
     },
     _showPanel: function(){
         this._actor.show();
-        if(this._actor.get_y() == this._monitor.y){
-            Tweener.addTween(this._actor, {
-                height: this._originalPanelHeight,
-                time: 0.3,
-                transition: 'easeOutQuad',
-                onComplete: Lang.bind(this, function() {
-                    this._actor.remove_clip();
-                }),
-                onUpdate: Lang.bind(this, function() {
-                    this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
-                })
-            });
-        } else {
-            Tweener.addTween(this._actor, {
-                y: this._monitor.height - this._actor.get_height(),
-                time: 0.3,
-                transition: 'easeOutQuad'
-            });
+
+        switch(Main.panel.edge){
+            case EDGE_TOP:    
+                Tweener.addTween(this._actor, {
+                    height: this._originalPanelHeight,
+                    time: 0.3,
+                    transition: 'easeOutQuad',
+                    onComplete: Lang.bind(this, function() {
+                        this._actor.remove_clip();
+                    }),
+                    onUpdate: Lang.bind(this, function() {
+                        this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                    })
+                });
+                break;
+            case EDGE_BOTTOM:
+                Tweener.addTween(this._actor, {
+                    y: this._monitor.height - this._actor.get_height(),
+                    time: 0.3,
+                    transition: 'easeOutQuad'
+                });
+                break;
         }
     }
 }
@@ -420,6 +435,8 @@ PanelEdgeManager.prototype = {
                 this._arrowSide = St.Side.BOTTOM;
                 break;
         }
+        
+        Main.panel.edge = this.edge;
 
         this._updateMenuArrowSide();
     },
@@ -455,8 +472,8 @@ PanelSettingsButton.prototype = {
         this._settings = new SettingsManager;
         this._settings.load();
 
-        this._visibilityManager = new PanelVisibilityManager(this._settings);
         this._edgeManager = new PanelEdgeManager(this._settings);
+        this._visibilityManager = new PanelVisibilityManager(this._settings);
         
         this._createVisibilityMenu();
         this._createEdgeMenu();
