@@ -224,6 +224,9 @@ VisibilityAutohideState.prototype = {
     _init: function(originalPanelHeight){
         VisibilityBaseState.prototype._init.call(this, originalPanelHeight);
 
+        Main.layoutManager.removeChrome(this._actor);
+        Main.layoutManager.addChrome(this._actor, { affectsStruts: false});
+        
         if(!Main.overview.visible){
             this._hidePanel();
         }
@@ -252,6 +255,9 @@ VisibilityAutohideState.prototype = {
         }
     },
     destroy: function(){
+        Main.layoutManager.removeChrome(this._actor);
+        Main.layoutManager.addChrome(this._actor, { affectsStruts: true});
+        
         this._showPanel();
     }
 }
