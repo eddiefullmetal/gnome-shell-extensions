@@ -464,13 +464,12 @@ function PanelSettingsButton() {
 }
 
 PanelSettingsButton.prototype = {
-    __proto__: PanelMenu.SystemStatusButton.prototype,
-
     _init: function() {
-        PanelMenu.SystemStatusButton.prototype._init.call(this, 'system-run');
-
         this._settings = new SettingsManager;
         this._settings.load();
+        
+        this._panelSettingsMenu = new PopupMenu.PopupSubMenuMenuItem("Panel Settings");
+        Main.panel._statusArea.userMenu.menu.addMenuItem(this._panelSettingsMenu, 5);
 
         this._edgeManager = new PanelEdgeManager(this._settings);
         this._visibilityManager = new PanelVisibilityManager(this._settings);
@@ -482,7 +481,7 @@ PanelSettingsButton.prototype = {
         this._visibilityItems = new Array;
 
         this._panelVisibilitySubMenu = new PopupMenu.PopupSubMenuMenuItem("Visibility");
-        this.menu.addMenuItem(this._panelVisibilitySubMenu);
+        this._panelSettingsMenu.menu.addMenuItem(this._panelVisibilitySubMenu);
     
         this._visibilityItems[VISIBILITY_NORMAL] = new PopupMenu.PopupMenuItem("Normal");
         this._visibilityItems[VISIBILITY_NORMAL].connect('activate', Lang.bind(this, this._onVisibilityNormalItemClick));
@@ -500,7 +499,7 @@ PanelSettingsButton.prototype = {
     },
     _createEdgeMenu: function(){
         this._panelEdgeSubMenu = new PopupMenu.PopupSubMenuMenuItem("Edge");
-        this.menu.addMenuItem(this._panelEdgeSubMenu);
+        this._panelSettingsMenu.menu.addMenuItem(this._panelEdgeSubMenu);
 
         this._edgeItems = new Array;
 
@@ -559,14 +558,13 @@ PanelSettingsButton.prototype = {
 function init(metadata) {
 }
 
-let _indicator;
+let _panelSettings;
 
 function enable() {
-    _indicator = new PanelSettingsButton;
-    Main.panel.addToStatusArea('settings_panel_button', _indicator);
+    _panelSettings = new PanelSettingsButton;
 }
 
 function disable() {
-    _indicator.destroy();
-    _indicator = null;
+    _panelSettings.destroy();
+    _panelSettings = null;
 }
