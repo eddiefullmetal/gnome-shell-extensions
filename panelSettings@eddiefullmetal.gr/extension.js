@@ -435,7 +435,7 @@ PanelEdgeManager.prototype = {
                 this._arrowSide = St.Side.TOP;
                 break;
             case EDGE_BOTTOM:
-                Main.messageTray.actor.get_parent().set_y(0);
+                Main.messageTray.actor.get_parent().set_y(Main.messageTray.actor.get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 this._overviewCorner.enable();
                 this._arrowSide = St.Side.BOTTOM;
