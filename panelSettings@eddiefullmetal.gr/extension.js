@@ -458,64 +458,68 @@ PanelEdgeManager.prototype = {
     _menuRemoved: function(menu){
     },
     destroy: function(){
-        this.setState(EDGE_TOP, false);
+        this.setEdge(EDGE_TOP, false);
         this._menuHook.destroy();
         this._overviewCorner.destroy();
     }
 }
 
-/* Panel Settings Button */
-function PanelSettingsButton() {
+/* Panel Settings */
+function PanelSettings() {
     this._init();
 }
 
-PanelSettingsButton.prototype = {
+PanelSettings.prototype = {
     _init: function() {
         this._settings = new SettingsManager;
         this._settings.load();
         
         this._panelSettingsMenu = new PopupMenu.PopupSubMenuMenuItem("Panel Settings");
-        Main.panel._statusArea.userMenu.menu.addMenuItem(this._panelSettingsMenu, 5);
 
         this._edgeManager = new PanelEdgeManager(this._settings);
         this._visibilityManager = new PanelVisibilityManager(this._settings);
         
         this._createVisibilityMenu();
+        this._panelSettingsMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._createEdgeMenu();
+
+        Main.panel._statusArea.userMenu.menu.addMenuItem(this._panelSettingsMenu, 5);
     },
     _createVisibilityMenu: function(){
         this._visibilityItems = new Array;
 
-        this._panelVisibilitySubMenu = new PopupMenu.PopupSubMenuMenuItem("Visibility");
-        this._panelSettingsMenu.menu.addMenuItem(this._panelVisibilitySubMenu);
+        this._panelVisibilityTitle = new PopupMenu.PopupMenuItem("Visibility", { reactive: false });
+        this._panelVisibilityTitle.label.set_style('font-weight:bold');
+        this._panelSettingsMenu.menu.addMenuItem(this._panelVisibilityTitle);
     
         this._visibilityItems[VISIBILITY_NORMAL] = new PopupMenu.PopupMenuItem("Normal");
         this._visibilityItems[VISIBILITY_NORMAL].connect('activate', Lang.bind(this, this._onVisibilityNormalItemClick));
-        this._panelVisibilitySubMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_NORMAL]);
+        this._panelSettingsMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_NORMAL]);
         
         this._visibilityItems[VISIBILITY_AUTOHIDE] = new PopupMenu.PopupMenuItem("Autohide");
         this._visibilityItems[VISIBILITY_AUTOHIDE].connect('activate', Lang.bind(this, this._onVisibilityAutohideItemClick));
-        this._panelVisibilitySubMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_AUTOHIDE]);
+        this._panelSettingsMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_AUTOHIDE]);
 
         this._visibilityItems[VISIBILITY_OVERVIEW_ONLY] = new PopupMenu.PopupMenuItem("Overview Only");
         this._visibilityItems[VISIBILITY_OVERVIEW_ONLY].connect('activate', Lang.bind(this, this._onVisibilityOverviewOnlyItemClick));        
-        this._panelVisibilitySubMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_OVERVIEW_ONLY]);
+        this._panelSettingsMenu.menu.addMenuItem(this._visibilityItems[VISIBILITY_OVERVIEW_ONLY]);
         
         this._updateVisibilityState();
     },
     _createEdgeMenu: function(){
-        this._panelEdgeSubMenu = new PopupMenu.PopupSubMenuMenuItem("Edge");
-        this._panelSettingsMenu.menu.addMenuItem(this._panelEdgeSubMenu);
+        this._panelEdgeTitle = new PopupMenu.PopupMenuItem("Edge", { reactive: false });
+        this._panelEdgeTitle.label.set_style('font-weight:bold');
+        this._panelSettingsMenu.menu.addMenuItem(this._panelEdgeTitle);
 
         this._edgeItems = new Array;
 
         this._edgeItems[EDGE_TOP] = new PopupMenu.PopupMenuItem("Top");
         this._edgeItems[EDGE_TOP].connect('activate', Lang.bind(this, this._onEdgeTopItemClick));
-        this._panelEdgeSubMenu.menu.addMenuItem(this._edgeItems[EDGE_TOP]);
+        this._panelSettingsMenu.menu.addMenuItem(this._edgeItems[EDGE_TOP]);
 
         this._edgeItems[EDGE_BOTTOM] = new PopupMenu.PopupMenuItem("Bottom");
         this._edgeItems[EDGE_BOTTOM].connect('activate', Lang.bind(this, this._onEdgeBottomItemClick));
-        this._panelEdgeSubMenu.menu.addMenuItem(this._edgeItems[EDGE_BOTTOM]);
+        this._panelSettingsMenu.menu.addMenuItem(this._edgeItems[EDGE_BOTTOM]);
 
         this._updateEdgeState();
     },
@@ -554,9 +558,9 @@ PanelSettingsButton.prototype = {
         this._edgeItems[this._edgeManager.edge].setShowDot(true);
     },
     destroy: function(){
+        this._panelSettingsMenu.destroy();
         this._visibilityManager.destroy();
         this._edgeManager.destroy();
-        PanelMenu.SystemStatusButton.prototype.destroy.call(this);
     }
 };
 
@@ -567,7 +571,7 @@ function init(metadata) {
 let _panelSettings;
 
 function enable() {
-    _panelSettings = new PanelSettingsButton;
+    _panelSettings = new PanelSettings();
 }
 
 function disable() {
