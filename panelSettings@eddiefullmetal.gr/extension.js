@@ -298,7 +298,7 @@ function PanelVisibilityManager(settings){
 
 PanelVisibilityManager.prototype = {
     _init: function(settings){
-        this._originalHeight = Main.panel.actor.get_height();		
+        this._originalHeight = Main.panel.actor.get_height();
         this._settings = settings;
 
         if(this._settings.settings.visibilityState != undefined){
@@ -435,7 +435,7 @@ PanelEdgeManager.prototype = {
                 this._arrowSide = St.Side.TOP;
                 break;
             case EDGE_BOTTOM:
-                Main.messageTray.actor.get_parent().set_y(Main.messageTray.actor.get_height());
+                Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 this._overviewCorner.enable();
                 this._arrowSide = St.Side.BOTTOM;
