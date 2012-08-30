@@ -88,6 +88,93 @@ OverviewCorner.prototype = {
     }
 }
 
+/* A slider with a label + number that updates with the slider
+ * text: the text for the item
+ * defaultVal: the intial value for the item (on the min -> max scale)
+ * min, max: the min and max values for the slider
+ * round: whether to round the value to the nearest integer
+ * ndec: number of decimal places to round to
+ * params: other params for PopupBaseMenuItem
+ */
+function PopupSliderMenuItem() {
+    this._init.apply(this, arguments);
+}
+PopupSliderMenuItem.prototype = {
+    __proto__: PopupMenu.PopupBaseMenuItem.prototype,
+    _init: function (text, defaultVal, min, max, round, ndec, params) {
+        PopupMenu.PopupBaseMenuItem.prototype._init.call(this, params);
+
+        /* set up properties */
+        this.min = min || 0;
+        this.max = max || 1;
+        this.round = round || false;
+        this._value = defaultVal;
+        if (round) {
+            this._value = Math.round(this._value);
+        }
+        this.ndec = this.ndec || (round ? 0 : 2);
+
+        /* set up item */
+        this.box = new St.BoxLayout({vertical: true});
+        this.addActor(this.box, {expand: true, span: -1});
+
+        this.topBox = new St.BoxLayout({vertical: false,
+            style_class: 'slider-menu-item-top-box'});
+        this.box.add(this.topBox, {x_fill: true});
+
+        this.bottomBox = new St.BoxLayout({vertical: false,
+            style_class: 'slider-menu-item-bottom-box'});
+        this.box.add(this.bottomBox, {x_fill: true});
+
+        this.label = new St.Label({text: text, reactive: false});
+        this.numberLabel = new St.Label({text: this._value.toFixed(this.ndec),
+            reactive: false});
+        this.slider = new PopupMenu.PopupSliderMenuItem((defaultVal - min) /
+            (max - min)); // between 0 and 1
+
+        /* connect up signals */
+        this.slider.connect('value-changed', Lang.bind(this, function (s, v) {
+            this._updateValue(s, v);
+            this.emit('value-changed', this._value);
+        }));
+        /* pass through the drag-end, clicked signal */
+        this.slider.connect('drag-end', Lang.bind(this, function () {
+            this.emit('drag-end', this._value);
+        }));
+        // Note: if I set the padding in the css it gets overridden
+        this.slider.actor.set_style('padding-left: 0em; padding-right: 0em;');
+
+        /* assemble the item */
+        this.topBox.add(this.label, {expand: true});
+        this.topBox.add(this.numberLabel, {align: St.Align.END});
+        this.bottomBox.add(this.slider.actor, {expand: true, span: -1});
+    },
+    /* returns the value of the slider, either the raw (0-1) value or the
+     * value on the min->max scale. */
+    getValue: function (raw) {
+        if (raw) {
+            return this.slider.value;
+        } else {
+            return this._value;
+        }
+    },
+    /* sets the value of the slider, either the raw (0-1) value or the
+     * value on the min->max scale */
+    setValue: function (value, raw) {
+        value = (raw ? value : (value - this.min) / (this.max - this.min));
+        this._updateValue(this.slider, value);
+        this.slider.setValue(value);
+    },
+    _updateValue: function (slider, value) {
+        let val = value * (this.max - this.min) + this.min;
+        if (this.round) {
+            val = Math.round(val);
+        }
+        this._value = val;
+        this.numberLabel.set_text(val.toFixed(this.ndec));
+    }
+};
+
 /* Panel Visibility States */
 
 //Visibility States
@@ -482,6 +569,8 @@ PanelSettings.prototype = {
         this._createVisibilityMenu();
         this._panelSettingsMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._createEdgeMenu();
+        this._panelSettingsMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._createTransparencyMenu();
 
         Main.panel._statusArea.userMenu.menu.addMenuItem(this._panelSettingsMenu, 5);
     },
@@ -522,6 +611,33 @@ PanelSettings.prototype = {
         this._panelSettingsMenu.menu.addMenuItem(this._edgeItems[EDGE_BOTTOM]);
 
         this._updateEdgeState();
+    },
+    _createTransparencyMenu: function(){
+        // TODO: launch a Gtk widget to select bg colour/image
+        let op = this._settings.settings.opacity;
+        if (op === null || op === undefined) {
+            op = 255;
+        }
+        this._transparencyItem = new PopupSliderMenuItem("Opacity",
+            op, 0, 255, true, 0);
+        this._panelSettingsMenu.menu.addMenuItem(this._transparencyItem);
+        this._transparencyItem.connect('value-changed', Lang.bind(this, this._onTransparencyChanged));
+        this._onTransparencyChanged(this._transparencyItem, op);
+    },
+    _onTransparencyChanged: function(slider, alpha) {
+        if (this._settings.settings.opacity === alpha && Main.panel.actor.style) {
+            return;
+        }
+        // TODO: works for panel corners in GNOME 3.2 but *NOT* the panel!
+        let col = Main.panel.actor.get_theme_node().get_background_color();
+        col = 'rgba(%d, %d, %d, %.2f)'.format(col.red, col.green, col.blue, alpha/255);
+        Main.panel.actor.style = 'background-color: ' + col;
+        Main.panel._leftCorner.actor.style = '-panel-corner-background-color: ' + col;
+        Main.panel._rightCorner.actor.style = '-panel-corner-background-color: ' + col;
+        this._settings.settings.opacity = alpha;
+        this._settings.save();
+    },
+    _updateTransparency: function(slider, alpha, save) {
     },
     _onVisibilityOverviewOnlyItemClick: function(){
         this._visibilityManager.setState(VISIBILITY_OVERVIEW_ONLY);
