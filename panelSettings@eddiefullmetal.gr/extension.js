@@ -156,6 +156,7 @@ VisibilityBaseState.prototype = {
             case EDGE_TOP:    
                 Tweener.addTween(this._actor, {
                     height: 1,
+                    opacity:0,
                     time: 0.3,
                     transition: 'easeOutQuad',
                     onUpdate: Lang.bind(this, function() {
@@ -180,6 +181,7 @@ VisibilityBaseState.prototype = {
                 Tweener.addTween(this._actor, {
                     height: this._originalPanelHeight,
                     time: 0.3,
+                    opacity: 255,
                     transition: 'easeOutQuad',
                     onComplete: Lang.bind(this, function() {
                         this._actor.remove_clip();
