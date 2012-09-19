@@ -156,11 +156,13 @@ VisibilityBaseState.prototype = {
             case EDGE_TOP:    
                 Tweener.addTween(this._actor, {
                     height: 1,
-                    opacity:0,
                     time: 0.3,
                     transition: 'easeOutQuad',
                     onUpdate: Lang.bind(this, function() {
                         this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                    }),
+                    onComplete: Lang.bind(this, function() {
+                        this._actor.set_opacity(0);
                     })
                 });
                 break;
@@ -168,20 +170,23 @@ VisibilityBaseState.prototype = {
                 Tweener.addTween(this._actor, {
                     y: this._actor.get_y() + this._actor.get_height() - 1,
                     time: 0.3,
-                    transition: 'easeOutQuad'
+                    transition: 'easeOutQuad',
+                    onComplete: Lang.bind(this, function() {
+                        this._actor.set_opacity(0);
+                    })
                 });
                 break;
         }
     },
     _showPanel: function(){
         this._actor.show();
+        this._actor.set_opacity(255);
 
         switch(Main.panel.edge){
             case EDGE_TOP:    
                 Tweener.addTween(this._actor, {
                     height: this._originalPanelHeight,
                     time: 0.3,
-                    opacity: 255,
                     transition: 'easeOutQuad',
                     onComplete: Lang.bind(this, function() {
                         this._actor.remove_clip();
