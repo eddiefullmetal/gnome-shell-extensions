@@ -217,11 +217,13 @@ VisibilityBaseState.prototype = {
         switch(Main.panel.edge){
             case EDGE_TOP:
                 this._actor.set_height(1);
+                this._actor.set_opacity(0);
                 this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), 1);
                 break;
             case EDGE_BOTTOM:
                 let y = this._actor.get_y() + this._actor.get_height() -1;
                 this._actor.set_y(y);
+                this._actor.set_opacity(0);
                 break;
         }
     },
@@ -231,10 +233,12 @@ VisibilityBaseState.prototype = {
         switch(Main.panel.edge){
             case EDGE_TOP:
                 this._actor.set_height(this._originalPanelHeight);
+                this._actor.set_opacity(255);
                 this._actor.remove_clip();
                 break;
             case EDGE_BOTTOM:
                 this._actor.set_y(this._monitor.height - this._actor.get_height());
+                this._actor.set_opacity(255);
                 break;
         }
     },
@@ -247,6 +251,9 @@ VisibilityBaseState.prototype = {
                     transition: 'easeOutQuad',
                     onUpdate: Lang.bind(this, function() {
                         this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                    }),
+                    onComplete: Lang.bind(this, function() {
+                        this._actor.set_opacity(0);
                     })
                 });
                 break;
@@ -254,13 +261,17 @@ VisibilityBaseState.prototype = {
                 Tweener.addTween(this._actor, {
                     y: this._actor.get_y() + this._actor.get_height() - 1,
                     time: 0.3,
-                    transition: 'easeOutQuad'
+                    transition: 'easeOutQuad',
+                    onComplete: Lang.bind(this, function() {
+                        this._actor.set_opacity(0);
+                    })
                 });
                 break;
         }
     },
     _showPanel: function(){
         this._actor.show();
+        this._actor.set_opacity(255);
 
         switch(Main.panel.edge){
             case EDGE_TOP:    
