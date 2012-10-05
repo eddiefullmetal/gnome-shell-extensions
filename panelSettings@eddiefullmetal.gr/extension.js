@@ -1,7 +1,14 @@
+//// Configuration ////
+/// Time the mouse has to be at the top of the screen in autohide mode before
+/// the panel is shown again (milliseconds);
+const PANEL_DELAY_MS = 200;
+
+//// Code ////
 const St = imports.gi.St;
 const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
 const Lang = imports.lang;
+const Mainloop = imports.mainloop;
 
 const Tweener = imports.ui.tweener;
 const Main = imports.ui.main;
@@ -243,10 +250,22 @@ VisibilityAutohideState.prototype = {
         }
     },
     onPanelMouseEnter: function(){
-        this._pendingHideRequest = false;
-        this._showPanel();
+        // add a delay before we show the panel.
+        this._showID = Mainloop.timeout_add(PANEL_DELAY_MS,
+            Lang.bind(this, function () {
+                this._pendingHideRequest = false;
+                this._showPanel();
+                this._showID = 0;
+                return false;
+            })
+        );
     },
     onPanelMouseLeave: function(){
+        // cancel any panel-show requests that have yet to happen.
+        if (this._showID) {
+            Mainloop.source_remove(this._showID);
+            this._showID = 0;
+        }
         //If the overview is visible or a menu is shown do not hide the panel
         var canHide = !Main.overview.visible && Main.panel._menus._activeMenu == null;
         this._pendingHideRequest = !canHide;
@@ -268,6 +287,10 @@ VisibilityAutohideState.prototype = {
     destroy: function(){
         Main.layoutManager.removeChrome(this._actor);
         Main.layoutManager.addChrome(this._actor, { affectsStruts: true});
+        if (this._showID) {
+            Mainloop.source_remove(this._showID);
+            this._showID = 0;
+        }
         
         this._showPanel();
     }
