@@ -10,12 +10,23 @@ const PanelMenu = imports.ui.panelMenu;
 const Layout = imports.ui.layout;
 const ExtensionSystem = imports.ui.extensionSystem;
 
+const ShellVersion = imports.misc.config.PACKAGE_VERSION.split('.');
 let ExtensionPath;
-if(ExtensionSystem.Config.PACKAGE_VERSION.indexOf("3.4") == 0){
-    ExtensionPath = imports.misc.extensionUtils.getCurrentExtension().path;
-}else{
+if (ShellVersion[1] === 2) {
     ExtensionPath = ExtensionSystem.extensionMeta['panelSettings@eddiefullmetal.gr'].path;
+} else {
+    ExtensionPath = imports.misc.extensionUtils.getCurrentExtension().path;
 }
+
+// compatibility. _statusArea -> statusArea
+function _getUserMenu() {
+    return (Main.panel._statusArea || Main.panel.statusArea).userMenu;
+}
+// compatibility panel._menus -> panel.menuManager
+function _getMenuManager() {
+    return (Main.panel._menus || Main.panel.menuManager);
+}
+
 
 /* Generic Helper Classes */
 function MenuHook(menuAddedCallback, menuRemovedCallback){
@@ -24,24 +35,26 @@ function MenuHook(menuAddedCallback, menuRemovedCallback){
 
 MenuHook.prototype = {
     _init: function(menuAddedCallback, menuRemovedCallback){
-        this._originalAddMenuFunc = Main.panel._menus.addMenu;
-        this._originalRemoveMenuFunc = Main.panel._menus.removeMenu;
+        this._menuManager = _getMenuManager();
+        this._originalAddMenuFunc = this._menuManager.addMenu;
+        this._originalRemoveMenuFunc = this._menuManager.removeMenu;
         this._menuAddedCallback = menuAddedCallback;
         this._menuRemovedCallback = menuRemovedCallback;
 
-        Main.panel._menus.addMenu =  Lang.bind(this, function(menu, position){
-            this._originalAddMenuFunc.apply(Main.panel._menus,[menu, position]);            
+        this._menuManager.addMenu =  Lang.bind(this, function(menu, position){
+            this._originalAddMenuFunc.apply(this._menuManager, [menu, position]);            
             this._menuAddedCallback(menu, position);
         });
 
-        Main.panel._menus.removeMenu = Lang.bind(this, function(menu){
-            this._originalRemoveMenuFunc.apply(Main.panel._menus,[menu]);         
+        this._menuManager.removeMenu = Lang.bind(this, function(menu){
+            this._originalRemoveMenuFunc.apply(this._menuManager, [menu]);         
             this._menuRemovedCallback(menu);
         });
     },
     destroy: function(){
-        Main.panel._menus.addMenu = this._originalAddMenuFunc;
-        Main.panel._menus.removeMenu = this._originalRemoveMenuFunc;   
+        this._menuManager.addMenu = this._originalAddMenuFunc;
+        this._menuManager.removeMenu = this._originalAddMenuFunc;
+        this._menuManager = null;
     }
 }
 
@@ -75,7 +88,14 @@ function OverviewCorner(){
 OverviewCorner.prototype = {
     _init:function(){
         this._hotCorner = new Layout.HotCorner();  
-        Main.layoutManager.addChrome(this._hotCorner.actor, {visibleInFullscreen:true});
+
+        // GNOME 3.6: no visibleInFullscreen property, it's default
+        // GNOME 3.2 to 3.4 need visibleInFullscreen: true
+        if (ShellVersion[1] < 6) {
+            Main.layoutManager.addChrome(this._hotCorner.actor, {visibleInFullscreen:true});
+        } else {
+            Main.layoutManager.addChrome(this._hotCorner.actor);
+        }
     },
     enable: function(){
         this._hotCorner.actor.show();
@@ -335,7 +355,7 @@ VisibilityAutohideState.prototype = {
     },
     onPanelMouseLeave: function(){
         //If the overview is visible or a menu is shown do not hide the panel
-        var canHide = !Main.overview.visible && Main.panel._menus._activeMenu == null;
+        var canHide = !Main.overview.visible && _getMenuManager()._activeMenu == null;
         this._pendingHideRequest = !canHide;
         if(canHide){
             this._hidePanel();
@@ -417,9 +437,9 @@ PanelVisibilityManager.prototype = {
 
         this._menuData = new Array;
 
-        for(let menuIndex in Main.panel._menus._menus){
-            let menu = Main.panel._menus._menus[menuIndex].menu;
-            this._menuAdded(menu);
+        let menuManager = _getMenuManager();
+        for(let menuIndex in menuManager._menus){
+            this._menuAdded(menuManager._menus[menuIndex].menu);
         }
     },
     setState: function(visibilityState){
@@ -545,9 +565,9 @@ PanelEdgeManager.prototype = {
         this._updateMenuArrowSide();
     },
     _updateMenuArrowSide: function(){
-        for(let menuIndex in Main.panel._menus._menus){
-            let menu = Main.panel._menus._menus[menuIndex].menu;
-            this._menuAdded(menu);
+        let menuManager = _getMenuManager();
+        for(let menuIndex in menuManager._menus){
+            this._menuAdded(menuManager._menus[menuIndex].menu);
         }
     },
     _menuAdded: function(menu){
@@ -569,7 +589,7 @@ function PanelSettings() {
 
 PanelSettings.prototype = {
     _init: function() {
-        this._settings = new SettingsManager;
+        this._settings = new SettingsManager();
         this._settings.load();
         
         this._panelSettingsMenu = new PopupMenu.PopupSubMenuMenuItem("Panel Settings");
@@ -583,7 +603,7 @@ PanelSettings.prototype = {
         this._panelSettingsMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._createTransparencyMenu();
 
-        Main.panel._statusArea.userMenu.menu.addMenuItem(this._panelSettingsMenu, 5);
+        _getUserMenu().menu.addMenuItem(this._panelSettingsMenu, 5);
     },
     _createVisibilityMenu: function(){
         this._visibilityItems = new Array;
