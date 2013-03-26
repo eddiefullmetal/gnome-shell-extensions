@@ -279,7 +279,7 @@ VisibilityBaseState.prototype = {
                 break;
             case EDGE_BOTTOM:
                 Tweener.addTween(this._actor, {
-                    y: this._actor.get_y() + this._actor.get_height() - 1,
+                    y: this._monitor.height - 1,
                     time: 0.3,
                     transition: 'easeOutQuad',
                     onComplete: Lang.bind(this, function() {
