@@ -487,9 +487,11 @@ PanelVisibilityManager.prototype = {
         let index = this._findMenuData(menu);
 
         let menuData = this._menuData[index];
-        menuData.menu.disconnect(menuData.eventId);
+        if (menuData) {
+            menuData.menu.disconnect(menuData.eventId);
 
-        delete this._menuData[index];
+            delete this._menuData[index];
+        }
     },
     _findMenuData: function(menu){
         for(let menuDataIndex in this._menuData){
@@ -548,13 +550,13 @@ PanelEdgeManager.prototype = {
 
         switch(this.edge){
             case EDGE_TOP:
-                Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.messageTray.actor.get_parent().get_height());
+                //Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.messageTray.actor.get_parent().get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
                 //this._overviewCorner.disable();
                 this._arrowSide = St.Side.TOP;
                 break;
             case EDGE_BOTTOM:
-                Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
+                //Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y + Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 //this._overviewCorner.enable();
                 this._arrowSide = St.Side.BOTTOM;
