@@ -88,6 +88,7 @@ function OverviewCorner(){
 OverviewCorner.prototype = {
     _init:function(){
         this._hotCorner = new Layout.HotCorner();  
+        //this._hotCorner = Main.panel.statusArea['activities'].hotCorner;
 
         // GNOME 3.6: no visibleInFullscreen property, it's default
         // GNOME 3.2 to 3.4 need visibleInFullscreen: true
@@ -529,7 +530,7 @@ PanelEdgeManager.prototype = {
         let menuRemovedCallback = Lang.bind(this, this._menuRemoved);         
 
         this._menuHook = new MenuHook(menuAddedCallback, menuRemovedCallback);
-        this._overviewCorner = new OverviewCorner;
+        //this._overviewCorner = new OverviewCorner;
 
         if(this._settings.settings.edge != undefined){
             this.setEdge(this._settings.settings.edge, false);
@@ -549,13 +550,13 @@ PanelEdgeManager.prototype = {
             case EDGE_TOP:
                 Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.messageTray.actor.get_parent().get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y);
-                this._overviewCorner.disable();
+                //this._overviewCorner.disable();
                 this._arrowSide = St.Side.TOP;
                 break;
             case EDGE_BOTTOM:
                 Main.messageTray.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
                 Main.panel.actor.get_parent().set_y(Main.layoutManager.primaryMonitor.y + Main.layoutManager.primaryMonitor.height - Main.panel.actor.get_height());
-                this._overviewCorner.enable();
+                //this._overviewCorner.enable();
                 this._arrowSide = St.Side.BOTTOM;
                 break;
         }
@@ -578,7 +579,7 @@ PanelEdgeManager.prototype = {
     destroy: function(){
         this.setEdge(EDGE_TOP, false);
         this._menuHook.destroy();
-        this._overviewCorner.destroy();
+        //this._overviewCorner.destroy();
     }
 }
 
