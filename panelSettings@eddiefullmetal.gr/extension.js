@@ -212,11 +212,54 @@ function VisibilityBaseState(originalPanelHeight){
     this._init(originalPanelHeight);
 }
 
+function hiddenX(pnl) {
+    switch(Main.panel.edge){
+    case EDGE_TOP:
+				return Main.layoutManager.primaryMonitor.x
+        break;
+    case EDGE_BOTTOM:
+				return Main.layoutManager.primaryMonitor.x;
+				break;
+		}
+}
+
+function hiddenY(pnl) {
+    switch(Main.panel.edge){
+    case EDGE_TOP:
+				return Main.layoutManager.primaryMonitor.y
+        break;
+    case EDGE_BOTTOM:
+				return Main.layoutManager.primaryMonitor.y + Main.layoutManager.primaryMonitor.height  - 1;
+				break;
+		}
+}
+
+function visibleX(pnl) {
+    switch(Main.panel.edge){
+    case EDGE_TOP:
+				return Main.layoutManager.primaryMonitor.x
+        break;
+    case EDGE_BOTTOM:
+				return Main.layoutManager.primaryMonitor.x;
+				break;
+		}
+}
+
+function visibleY(pnl) {
+    switch(Main.panel.edge){
+    case EDGE_TOP:
+				return Main.layoutManager.primaryMonitor.y;
+        break;
+    case EDGE_BOTTOM:
+				return Main.layoutManager.primaryMonitor.y + Main.layoutManager.primaryMonitor.height - pnl._actor.get_height();
+				break;
+		}
+}
+
 VisibilityBaseState.prototype = {
     _init: function(originalPanelHeight){
         this._originalPanelHeight = originalPanelHeight;
         this._actor = Main.panel.actor.get_parent();
-        this._monitor = Main.layoutManager.primaryMonitor;
     },
     onPanelMouseEnter: function(){
     },
@@ -235,20 +278,23 @@ VisibilityBaseState.prototype = {
         this._actor.hide();
     },
     _hidePanelNoAnim: function(){      
+        this._actor.set_x(hiddenX(this));
+        this._actor.set_y(hiddenY(this));
         switch(Main.panel.edge){
             case EDGE_TOP:
-                this._actor.set_height(1);
+						    this._actor.set_height(1);
                 this._actor.set_opacity(0);
-                this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), 1);
+                this._actor.set_clip(Main.layoutManager.primaryMonitor.x, Main.layoutManager.primaryMonitor.y, this._actor.get_width(), 1);
                 break;
             case EDGE_BOTTOM:
-                let y = this._actor.get_y() + this._actor.get_height() -1;
-                this._actor.set_y(y);
                 this._actor.set_opacity(0);
                 break;
         }
     },
     _showPanelNoAnim: function(){  
+        this._actor.set_x(visibleX(this));
+        this._actor.set_y(visibleY(this));
+
         this._actor.show();  
 
         switch(Main.panel.edge){
@@ -258,7 +304,6 @@ VisibilityBaseState.prototype = {
                 this._actor.remove_clip();
                 break;
             case EDGE_BOTTOM:
-                this._actor.set_y(this._monitor.height - this._actor.get_height());
                 this._actor.set_opacity(255);
                 break;
         }
@@ -271,7 +316,7 @@ VisibilityBaseState.prototype = {
                     time: 0.3,
                     transition: 'easeOutQuad',
                     onUpdate: Lang.bind(this, function() {
-                        this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                        this._actor.set_clip(Main.layoutManager.primaryMonitor.x, Main.layoutManager.primaryMonitor.y, this._actor.get_width(), this._actor.get_height());
                     }),
                     onComplete: Lang.bind(this, function() {
                         this._actor.set_opacity(0);
@@ -280,7 +325,7 @@ VisibilityBaseState.prototype = {
                 break;
             case EDGE_BOTTOM:
                 Tweener.addTween(this._actor, {
-                    y: this._monitor.height - 1,
+                    y: hiddenY(this),
                     time: 0.3,
                     transition: 'easeOutQuad',
                     onComplete: Lang.bind(this, function() {
@@ -304,13 +349,13 @@ VisibilityBaseState.prototype = {
                         this._actor.remove_clip();
                     }),
                     onUpdate: Lang.bind(this, function() {
-                        this._actor.set_clip(this._monitor.x, this._monitor.y, this._actor.get_width(), this._actor.get_height());
+                        this._actor.set_clip(Main.layoutManager.primaryMonitor.x, Main.layoutManager.primaryMonitor.y, this._actor.get_width(), this._actor.get_height());
                     })
                 });
                 break;
             case EDGE_BOTTOM:
                 Tweener.addTween(this._actor, {
-                    y: this._monitor.height - this._actor.get_height(),
+                    y: visibleY(this),
                     time: 0.3,
                     transition: 'easeOutQuad'
                 });
@@ -479,6 +524,7 @@ PanelVisibilityManager.prototype = {
     _onOverviewShowing: function(){
         this._visibilityStateImpl.onOverviewShowing();
     },
+
     _menuAdded: function(menu){
         let eventId = menu.connect('open-state-changed', Lang.bind(this, this._onMenuOpenStateChanged));
         this._menuData.push({ menu: menu, eventId: eventId});
@@ -539,7 +585,16 @@ PanelEdgeManager.prototype = {
         }else{
             this.setEdge(EDGE_TOP, true);
         }
+
+        this._monitorsChangesEventId = 
+						Main.layoutManager.connect('monitors-changed', 
+																			 Lang.bind(this, this._onMonitorsChanged));
     },
+
+    _onMonitorsChanged: function(){
+				this.setEdge(this.edge, false);
+    },
+
     setEdge: function(edge, save){
         this.edge = edge;
 
@@ -579,6 +634,7 @@ PanelEdgeManager.prototype = {
     _menuRemoved: function(menu){
     },
     destroy: function(){
+        Main.layoutManager.disconnect(this._monitorsChangedEventId);
         this.setEdge(EDGE_TOP, false);
         this._menuHook.destroy();
         //this._overviewCorner.destroy();
