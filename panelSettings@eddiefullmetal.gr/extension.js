@@ -397,7 +397,8 @@ VisibilityAutohideState.prototype = {
     },
     onPanelMouseEnter: function(){
         this._pendingHideRequest = false;
-        this._showPanel();
+				if (!Main.overview.visible)
+						this._showPanel();
     },
     onPanelMouseLeave: function(){
         //If the overview is visible or a menu is shown do not hide the panel
