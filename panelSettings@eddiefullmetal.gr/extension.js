@@ -630,7 +630,8 @@ PanelEdgeManager.prototype = {
         }
     },
     _menuAdded: function(menu){
-        menu._boxPointer._arrowSide = this._arrowSide;
+        if (menu._boxPointer)
+						menu._boxPointer._arrowSide = this._arrowSide;
     },
     _menuRemoved: function(menu){
     },
@@ -663,7 +664,7 @@ PanelSettings.prototype = {
         this._panelSettingsMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._createTransparencyMenu();
 
-        _getUserMenu().menu.addMenuItem(this._panelSettingsMenu, 5);
+        _getUserMenu().menu.addMenuItem(this._panelSettingsMenu, 4);
     },
     _createVisibilityMenu: function(){
         this._visibilityItems = new Array;
